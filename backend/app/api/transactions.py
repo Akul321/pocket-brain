@@ -45,9 +45,10 @@ def list_transactions(
 
 @router.post("", response_model=TransactionOut, status_code=201)
 def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)):
-    category = payload.category or categorize(payload.description)
-    ai_note = get_ai_note(payload.description, payload.amount, category)
-    txn = Transaction(**payload.dict(), category=category, ai_note=ai_note)
+    data = payload.dict()
+    data["category"] = data.get("category") or categorize(payload.description)
+    data["ai_note"] = get_ai_note(payload.description, payload.amount, data["category"])
+    txn = Transaction(**data)
     db.add(txn)
     db.commit()
     db.refresh(txn)

@@ -34,6 +34,12 @@
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-slate-500;
   }
+
+  /* Force dark background on native select dropdowns */
+  select option {
+    background-color: #0d1f38;
+    color: #e2e8f0;
+  }
 }
 
 @layer components {
