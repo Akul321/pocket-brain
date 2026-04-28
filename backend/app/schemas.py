@@ -28,6 +28,8 @@ class TransactionBase(BaseModel):
     type: str
     category: str
     notes: Optional[str] = ""
+    payment_method: Optional[str] = "Other"
+    recurring: Optional[str] = "no"
 
 
 class TransactionCreate(TransactionBase):
@@ -41,11 +43,15 @@ class TransactionUpdate(BaseModel):
     type: Optional[str] = None
     category: Optional[str] = None
     notes: Optional[str] = None
+    payment_method: Optional[str] = None
+    recurring: Optional[str] = None
 
 
 class TransactionOut(TransactionBase):
     id: int
     ai_note: str = ""
+    payment_method: str = "Other"
+    recurring: str = "no"
     created_at: datetime
 
     class Config:

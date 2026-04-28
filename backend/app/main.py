@@ -13,6 +13,22 @@ from .schemas import UserProfileCreate, UserProfileOut
 
 Base.metadata.create_all(bind=engine)
 
+# Safe migrations — add new columns to existing DBs without losing data
+def _run_migrations():
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        for col, definition in [
+            ("payment_method", "TEXT DEFAULT 'Other'"),
+            ("recurring", "TEXT DEFAULT 'no'"),
+        ]:
+            try:
+                conn.execute(text(f"ALTER TABLE transactions ADD COLUMN {col} {definition}"))
+                conn.commit()
+            except Exception:
+                pass  # column already exists
+
+_run_migrations()
+
 app = FastAPI(title="Pocket Brain API", version="1.0.0", description="AI-powered personal finance API")
 
 ALLOWED_ORIGINS = os.getenv(

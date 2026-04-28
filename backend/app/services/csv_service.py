@@ -33,6 +33,10 @@ def parse_csv(content: bytes) -> List[Dict]:
 
         ai_note = get_ai_note(description, amount, category)
         notes = row.get("notes", "").strip()
+        payment_method = row.get("payment_method", "Other").strip() or "Other"
+        recurring = row.get("recurring", "no").strip().lower()
+        if recurring not in ("yes", "no"):
+            recurring = "no"
 
         records.append({
             "date": parsed_date,
@@ -42,6 +46,8 @@ def parse_csv(content: bytes) -> List[Dict]:
             "category": category,
             "notes": notes,
             "ai_note": ai_note,
+            "payment_method": payment_method,
+            "recurring": recurring,
         })
     return records
 

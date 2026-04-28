@@ -10,7 +10,8 @@
       "Bash(git remote *)",
       "Bash(git branch *)",
       "Bash(git push *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(xcopy \"C:\\\\Users\\\\Sapna\\\\Desktop\\\\pocket-brain\\\\backend\\\\app\" \"app\" /E /H /Y)"
     ]
   }
 }

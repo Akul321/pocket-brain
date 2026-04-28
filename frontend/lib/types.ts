@@ -7,8 +7,12 @@ export interface Transaction {
   category: string;
   notes: string;
   ai_note: string;
+  payment_method: string;
+  recurring: "yes" | "no";
   created_at: string;
 }
+
+export const PAYMENT_METHODS = ["UPI", "Cash", "Card", "Net Banking", "Wallet", "Other"];
 
 export interface Budget {
   id: number;

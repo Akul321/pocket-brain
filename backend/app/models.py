@@ -34,6 +34,8 @@ class Transaction(Base):
     category = Column(String, nullable=False)
     notes = Column(Text, default="")
     ai_note = Column(String, default="")
+    payment_method = Column(String, default="Other")
+    recurring = Column(String, default="no")  # "yes" | "no"
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
