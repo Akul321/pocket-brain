@@ -56,7 +56,7 @@ export default function LandingPage() {
           <span className="font-bold text-white">Pocket Brain</span>
         </div>
         <div className="ml-auto flex gap-3">
-          <Link href="/dashboard" className="btn-primary text-xs py-2">
+          <Link href="/onboarding" className="btn-primary text-xs py-2">
             Launch Dashboard <ArrowRight size={12} className="inline ml-1" />
           </Link>
         </div>
@@ -98,10 +98,10 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/dashboard" className="btn-primary text-sm px-8 py-3">
+            <Link href="/onboarding" className="btn-primary text-sm px-8 py-3">
               Launch Dashboard <ArrowRight size={14} className="inline ml-1" />
             </Link>
-            <Link href="/dashboard" className="btn-secondary text-sm px-8 py-3">
+            <Link href="/onboarding" className="btn-secondary text-sm px-8 py-3">
               View Demo Data
             </Link>
           </div>
@@ -244,7 +244,7 @@ export default function LandingPage() {
             <p className="text-slate-400 mb-8 text-sm leading-relaxed">
               No accounts. No subscriptions. No credit card. Just open the dashboard and start.
             </p>
-            <Link href="/dashboard" className="btn-primary px-10 py-3 text-sm">
+            <Link href="/onboarding" className="btn-primary px-10 py-3 text-sm">
               Launch Dashboard <ArrowRight size={14} className="inline ml-1" />
             </Link>
           </div>

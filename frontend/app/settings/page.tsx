@@ -16,6 +16,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     getProfile().then((p) => {
+      if (!p) return;
       setProfile(p);
       setForm({ name: p.name, currency: p.currency, monthly_income_target: String(p.monthly_income_target) });
     });
@@ -38,9 +39,9 @@ export default function SettingsPage() {
     setResetting(true);
     try {
       await resetDemo();
-      toast.success("Demo data reset successfully!");
+      toast.success("Data reset successfully!");
       setShowReset(false);
-      window.location.href = "/dashboard";
+      window.location.href = "/onboarding";
     } catch { toast.error("Reset failed"); }
     finally { setResetting(false); }
   };

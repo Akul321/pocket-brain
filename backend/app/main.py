@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import os
 
@@ -38,8 +39,7 @@ app.include_router(risk.router)
 
 @app.on_event("startup")
 def startup_event():
-    db = next(get_db())
-    seed_demo_data(db)
+    pass  # Users choose fresh or demo on first visit
 
 
 @app.get("/")
@@ -67,13 +67,43 @@ def update_profile(payload: UserProfileCreate, db: Session = Depends(get_db)):
     return profile
 
 
-@app.post("/api/reset-demo")
-def reset_demo(db: Session = Depends(get_db)):
-    from .models import Transaction, Budget, Goal, UserProfile, InsightCache
+class InitRequest(BaseModel):
+    mode: str  # "fresh" or "demo"
+    name: str = "User"
+    currency: str = "₹"
+    monthly_income_target: float = 50000.0
+
+
+@app.post("/api/init")
+def init_app(payload: InitRequest, db: Session = Depends(get_db)):
+    from .models import Transaction, Budget, Goal, UserProfile
     db.query(Transaction).delete()
     db.query(Budget).delete()
     db.query(Goal).delete()
     db.query(UserProfile).delete()
     db.commit()
-    seed_demo_data(db)
+    if payload.mode == "demo":
+        seed_demo_data(db, name=payload.name, currency=payload.currency,
+                       monthly_income_target=payload.monthly_income_target)
+    else:
+        profile = UserProfile(name=payload.name, currency=payload.currency,
+                              monthly_income_target=payload.monthly_income_target)
+        db.add(profile)
+        db.commit()
+    return {"status": "ok", "mode": payload.mode}
+
+
+@app.post("/api/reset-demo")
+def reset_demo(db: Session = Depends(get_db)):
+    from .models import Transaction, Budget, Goal, UserProfile
+    profile = db.query(UserProfile).first()
+    name = profile.name if profile else "Demo User"
+    currency = profile.currency if profile else "₹"
+    income = profile.monthly_income_target if profile else 50000.0
+    db.query(Transaction).delete()
+    db.query(Budget).delete()
+    db.query(Goal).delete()
+    db.query(UserProfile).delete()
+    db.commit()
+    seed_demo_data(db, name=name, currency=currency, monthly_income_target=income)
     return {"status": "reset complete"}

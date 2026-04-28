@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  TrendingUp, TrendingDown, DollarSign, PiggyBank,
+  TrendingUp, TrendingDown, PiggyBank,
   Percent, Shield, Wallet, Lightbulb,
 } from "lucide-react";
 import { MetricCard } from "@/components/dashboard/MetricCard";
@@ -11,9 +12,9 @@ import { SpendingChart } from "@/components/dashboard/SpendingChart";
 import { TrendChart } from "@/components/dashboard/TrendChart";
 import { Card, CardHeader, CardBody } from "@/components/ui/Card";
 import { SkeletonCard } from "@/components/ui/SkeletonCard";
-import { getSummary, getTransactions } from "@/lib/api";
-import type { Summary, Transaction } from "@/lib/types";
-import { getCategoryColor, getRiskColor } from "@/lib/utils";
+import { getSummary, getTransactions, getProfile } from "@/lib/api";
+import type { Summary, Transaction, UserProfile } from "@/lib/types";
+import { getRiskColor } from "@/lib/utils";
 
 function buildTrendData(transactions: Transaction[]) {
   const monthMap: Record<string, { income: number; expenses: number }> = {};
@@ -47,18 +48,22 @@ function buildCategoryData(transactions: Transaction[]) {
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([getSummary(), getTransactions()])
-      .then(([s, t]) => {
+    Promise.all([getSummary(), getTransactions(), getProfile()])
+      .then(([s, t, p]) => {
+        if (!p) { router.replace("/onboarding"); return; }
         setSummary(s);
         setTransactions(t);
+        setProfile(p);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   const trendData = useMemo(() => buildTrendData(transactions), [transactions]);
   const categoryData = useMemo(() => buildCategoryData(transactions), [transactions]);
@@ -95,7 +100,7 @@ export default function DashboardPage() {
         transition={{ duration: 0.4 }}
       >
         <h2 className="text-xl font-bold text-white">
-          Welcome back, <span className="gradient-text">Akul</span> 👋
+          Welcome back, <span className="gradient-text">{profile?.name ?? "..."}</span> 👋
         </h2>
         <p className="text-sm text-slate-400 mt-0.5">
           Here's your financial snapshot for this month.

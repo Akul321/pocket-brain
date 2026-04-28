@@ -19,10 +19,13 @@ export const getSummary = () => api.get<Summary>("/api/summary").then((r) => r.d
 export const getInsights = () => api.get<Insight[]>("/api/insights").then((r) => r.data);
 
 // Profile
-export const getProfile = () => api.get<UserProfile>("/api/profile").then((r) => r.data);
+export const getProfile = () =>
+  api.get<UserProfile>("/api/profile").then((r) => r.data).catch(() => null);
 export const updateProfile = (data: Partial<UserProfile>) =>
   api.put<UserProfile>("/api/profile", data).then((r) => r.data);
 export const resetDemo = () => api.post("/api/reset-demo").then((r) => r.data);
+export const initApp = (mode: "fresh" | "demo", name: string, currency = "₹", monthly_income_target = 50000) =>
+  api.post("/api/init", { mode, name, currency, monthly_income_target }).then((r) => r.data);
 
 // Transactions
 export const getTransactions = (params?: Record<string, string>) =>

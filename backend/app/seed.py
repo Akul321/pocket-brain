@@ -3,11 +3,8 @@ from .models import Transaction, Budget, Goal, UserProfile
 from .services.categorizer import categorize, get_ai_note
 
 
-def seed_demo_data(db):
-    if db.query(UserProfile).first():
-        return
-
-    profile = UserProfile(name="Akul", currency="₹", monthly_income_target=50000)
+def seed_demo_data(db, name: str = "Demo User", currency: str = "₹", monthly_income_target: float = 50000):
+    profile = UserProfile(name=name, currency=currency, monthly_income_target=monthly_income_target)
     db.add(profile)
 
     today = date.today()
