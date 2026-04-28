@@ -1,0 +1,10 @@
+# This file is for the HF Space repo — rename to .gitignore when pushing there
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.db
+*.sqlite
+.env
+.DS_Store
