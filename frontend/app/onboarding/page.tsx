@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Brain, Sparkles, ArrowRight, User, Database, CheckCircle } from "lucide-react";
@@ -11,6 +11,12 @@ type Step = "choose" | "setup-fresh" | "setup-demo" | "loading";
 export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>("choose");
+
+  useEffect(() => {
+    if (localStorage.getItem("pb_profile")) {
+      router.replace("/dashboard");
+    }
+  }, [router]);
   const [name, setName] = useState("");
   const [currency, setCurrency] = useState("₹");
   const [income, setIncome] = useState("50000");
