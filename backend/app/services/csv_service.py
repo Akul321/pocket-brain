@@ -1,8 +1,31 @@
 import io
 import csv
-from datetime import date
+from datetime import date, datetime
 from typing import List, Dict
 from .categorizer import categorize, get_ai_note
+
+_DATE_FORMATS = [
+    "%Y-%m-%d",   # 2024-01-15
+    "%d/%m/%Y",   # 15/01/2024  (Indian/UK)
+    "%m/%d/%Y",   # 01/15/2024  (US)
+    "%d-%m-%Y",   # 15-01-2024
+    "%Y/%m/%d",   # 2024/01/15
+    "%d %b %Y",   # 15 Jan 2024
+    "%d %B %Y",   # 15 January 2024
+    "%b %d, %Y",  # Jan 15, 2024
+    "%d/%m/%y",   # 15/01/24
+    "%m/%d/%y",   # 01/15/24
+]
+
+
+def _parse_date(raw: str) -> date:
+    raw = raw.strip()
+    for fmt in _DATE_FORMATS:
+        try:
+            return datetime.strptime(raw, fmt).date()
+        except ValueError:
+            continue
+    raise ValueError(f"Unrecognised date: {raw!r}")
 
 
 def parse_csv(content: bytes) -> List[Dict]:
@@ -12,7 +35,7 @@ def parse_csv(content: bytes) -> List[Dict]:
     for row in reader:
         raw_date = row.get("date", "").strip()
         try:
-            parsed_date = date.fromisoformat(raw_date)
+            parsed_date = _parse_date(raw_date)
         except ValueError:
             continue
 

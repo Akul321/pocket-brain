@@ -111,7 +111,11 @@ export default function DashboardPage() {
             Welcome back, <span className="gradient-text">{profile?.name ?? "..."}</span> 👋
           </h2>
           <p className="text-sm text-slate-400 mt-0.5">
-            Here's your financial snapshot for this month.
+            Financial snapshot for{" "}
+            <span className="text-slate-300">
+              {new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
+            </span>
+            . Older data appears in the trend chart below.
           </p>
         </div>
         <button

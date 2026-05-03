@@ -104,9 +104,13 @@ export default function TransactionsPage() {
     if (!file) return;
     try {
       const result = await importCSV(file);
-      toast.success(`Imported ${result.imported} transactions`);
-      fetchTransactions();
-      triggerRefresh(); // update dashboard
+      if (result.imported === 0) {
+        toast.error("No transactions imported — check that your CSV has a 'date' column and valid dates.");
+      } else {
+        toast.success(`Imported ${result.imported} transactions`);
+        fetchTransactions();
+        triggerRefresh(); // update dashboard
+      }
     } catch { toast.error("Import failed — check CSV format"); }
     e.target.value = ""; // allow re-importing same file
   };
