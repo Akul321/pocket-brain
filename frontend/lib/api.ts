@@ -58,8 +58,8 @@ export const updateGoal = (id: number, data: Partial<Goal>) =>
 export const deleteGoal = (id: number) => api.delete(`/api/goals/${id}`).then((r) => r.data);
 
 // Coach
-export const askCoach = (message: string) =>
-  api.post<{ reply: string }>("/api/coach", { message }).then((r) => r.data);
+export const askCoach = (message: string, history: { role: string; content: string }[] = []) =>
+  api.post<{ reply: string }>("/api/coach", { message, history }).then((r) => r.data);
 
 // Simulator
 export const simulate = (params: Record<string, number | string | undefined>) =>

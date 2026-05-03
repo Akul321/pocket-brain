@@ -8,6 +8,6 @@ router = APIRouter(prefix="/api", tags=["coach"])
 
 
 @router.post("/coach", response_model=CoachResponse)
-def ask_coach(payload: CoachRequest, db: Session = Depends(get_db)):
-    reply = generate_coach_reply(payload.message, db)
+async def ask_coach(payload: CoachRequest, db: Session = Depends(get_db)):
+    reply = await generate_coach_reply(payload.message, payload.history, db)
     return {"reply": reply}

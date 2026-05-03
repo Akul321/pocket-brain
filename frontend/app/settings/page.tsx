@@ -31,6 +31,11 @@ export default function SettingsPage() {
         monthly_income_target: parseFloat(form.monthly_income_target),
       });
       setProfile(updated);
+      localStorage.setItem("pb_profile", JSON.stringify({
+        name: updated.name,
+        currency: updated.currency,
+        monthly_income_target: updated.monthly_income_target,
+      }));
       toast.success("Profile saved!");
     } catch { toast.error("Failed to save"); }
   };

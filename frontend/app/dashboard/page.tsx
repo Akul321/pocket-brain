@@ -12,7 +12,7 @@ import { SpendingChart } from "@/components/dashboard/SpendingChart";
 import { TrendChart } from "@/components/dashboard/TrendChart";
 import { Card, CardHeader, CardBody } from "@/components/ui/Card";
 import { SkeletonCard } from "@/components/ui/SkeletonCard";
-import { getSummary, getTransactions, getProfile } from "@/lib/api";
+import { getSummary, getTransactions, getProfile, updateProfile } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import type { Summary, Transaction, UserProfile } from "@/lib/types";
 
@@ -58,7 +58,20 @@ export default function DashboardPage() {
     else setRefreshing(true);
     try {
       const [s, t, p] = await Promise.all([getSummary(), getTransactions(), getProfile()]);
-      if (!p) { router.replace("/onboarding"); return; }
+      if (!p) {
+        const cached = localStorage.getItem("pb_profile");
+        if (cached) {
+          try {
+            const restored = await updateProfile(JSON.parse(cached));
+            setSummary(s);
+            setTransactions(t);
+            setProfile(restored);
+            return;
+          } catch { /* fall through to redirect */ }
+        }
+        router.replace("/onboarding");
+        return;
+      }
       setSummary(s);
       setTransactions(t);
       setProfile(p);

@@ -120,8 +120,14 @@ class InsightOut(BaseModel):
     insight_type: str = ""
 
 
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
 class CoachRequest(BaseModel):
     message: str
+    history: List[ChatMessage] = []
 
 
 class CoachResponse(BaseModel):

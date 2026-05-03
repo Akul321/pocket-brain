@@ -15,12 +15,18 @@ export default function OnboardingPage() {
   const [currency, setCurrency] = useState("₹");
   const [income, setIncome] = useState("50000");
 
+  const cacheProfile = (profileName: string, cur: string, incomeTarget: number) => {
+    localStorage.setItem("pb_profile", JSON.stringify({ name: profileName, currency: cur, monthly_income_target: incomeTarget }));
+  };
+
   const handleFresh = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
     setStep("loading");
+    const incomeTarget = parseFloat(income) || 50000;
     try {
-      await initApp("fresh", name.trim(), currency, parseFloat(income) || 50000);
+      await initApp("fresh", name.trim(), currency, incomeTarget);
+      cacheProfile(name.trim(), currency, incomeTarget);
       router.push("/dashboard");
     } catch {
       toast.error("Something went wrong. Please try again.");
@@ -30,9 +36,11 @@ export default function OnboardingPage() {
 
   const handleDemo = async () => {
     const demoName = name.trim() || "Demo User";
+    const incomeTarget = parseFloat(income) || 50000;
     setStep("loading");
     try {
-      await initApp("demo", demoName, currency, parseFloat(income) || 50000);
+      await initApp("demo", demoName, currency, incomeTarget);
+      cacheProfile(demoName, currency, incomeTarget);
       router.push("/dashboard");
     } catch {
       toast.error("Something went wrong. Please try again.");

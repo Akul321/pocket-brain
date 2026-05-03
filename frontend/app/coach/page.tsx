@@ -50,11 +50,16 @@ export default function CoachPage() {
 
   const send = async (text: string) => {
     if (!text.trim() || loading) return;
+    // Build history from prior turns (skip the initial greeting, cap at last 8 messages)
+    const history = messages
+      .slice(1)
+      .slice(-8)
+      .map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.text }));
     setMessages((prev) => [...prev, { role: "user", text }]);
     setInput("");
     setLoading(true);
     try {
-      const { reply } = await askCoach(text);
+      const { reply } = await askCoach(text, history);
       setMessages((prev) => [...prev, { role: "assistant", text: reply }]);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", text: "Sorry, I'm having trouble connecting. Please try again." }]);
