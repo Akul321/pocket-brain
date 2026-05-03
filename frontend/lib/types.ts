@@ -55,6 +55,7 @@ export interface Summary {
   cash_left: number;
   risk_level: "Low" | "Medium" | "High";
   top_category: string;
+  active_month: string;
   insights: Insight[];
 }
 

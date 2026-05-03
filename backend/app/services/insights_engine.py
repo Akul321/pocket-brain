@@ -10,6 +10,17 @@ def get_current_month_str() -> str:
     return today.strftime("%Y-%m")
 
 
+def get_active_month(db: Session) -> str:
+    """Return the current month if it has transactions, otherwise the most recent month that does."""
+    current = get_current_month_str()
+    if get_month_transactions(db, current):
+        return current
+    latest = db.query(Transaction).order_by(Transaction.date.desc()).first()
+    if latest:
+        return latest.date.strftime("%Y-%m")
+    return current
+
+
 def get_month_transactions(db: Session, month_str: str) -> List[Transaction]:
     year, month = map(int, month_str.split("-"))
     return (
@@ -35,7 +46,7 @@ def get_prev_month_str(month_str: str) -> str:
 
 
 def compute_summary(db: Session) -> dict:
-    month = get_current_month_str()
+    month = get_active_month(db)
     txns = get_month_transactions(db, month)
     income = sum(t.amount for t in txns if t.type == "income")
     expenses = sum(t.amount for t in txns if t.type == "expense")
@@ -63,12 +74,13 @@ def compute_summary(db: Session) -> dict:
         "cash_left": cash_left,
         "risk_level": risk_level,
         "top_category": top_category,
+        "active_month": month,
     }
 
 
 def generate_insights(db: Session) -> List[dict]:
     insights = []
-    month = get_current_month_str()
+    month = get_active_month(db)
     prev_month = get_prev_month_str(month)
 
     curr_txns = get_month_transactions(db, month)

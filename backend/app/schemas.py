@@ -163,4 +163,5 @@ class SummaryOut(BaseModel):
     cash_left: float
     risk_level: str
     top_category: str
+    active_month: str = ""
     insights: List[InsightOut]

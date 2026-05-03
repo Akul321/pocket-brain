@@ -34,11 +34,10 @@ function buildTrendData(transactions: Transaction[]) {
     }));
 }
 
-function buildCategoryData(transactions: Transaction[]) {
+function buildCategoryData(transactions: Transaction[], activeMonth: string) {
   const cat: Record<string, number> = {};
-  const currMonth = new Date().toISOString().slice(0, 7);
   transactions
-    .filter((t) => t.type === "expense" && t.date.startsWith(currMonth))
+    .filter((t) => t.type === "expense" && t.date.startsWith(activeMonth))
     .forEach((t) => { cat[t.category] = (cat[t.category] || 0) + t.amount; });
   return Object.entries(cat)
     .sort(([, a], [, b]) => b - a)
@@ -75,8 +74,9 @@ export default function DashboardPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshKey]);
 
+  const activeMonth = summary?.active_month ?? new Date().toISOString().slice(0, 7);
   const trendData = useMemo(() => buildTrendData(transactions), [transactions]);
-  const categoryData = useMemo(() => buildCategoryData(transactions), [transactions]);
+  const categoryData = useMemo(() => buildCategoryData(transactions, activeMonth), [transactions, activeMonth]);
 
   if (loading) {
     return (
@@ -113,9 +113,11 @@ export default function DashboardPage() {
           <p className="text-sm text-slate-400 mt-0.5">
             Financial snapshot for{" "}
             <span className="text-slate-300">
-              {new Date().toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
+              {new Date(activeMonth + "-01").toLocaleDateString("en-IN", { month: "long", year: "numeric" })}
             </span>
-            . Older data appears in the trend chart below.
+            {activeMonth !== new Date().toISOString().slice(0, 7) && (
+              <span className="ml-1 text-amber-400">(no data yet for current month)</span>
+            )}
           </p>
         </div>
         <button
