@@ -75,6 +75,11 @@ export default function DashboardPage() {
       setSummary(s);
       setTransactions(t);
       setProfile(p);
+      localStorage.setItem("pb_profile", JSON.stringify({
+        name: p.name,
+        currency: p.currency,
+        monthly_income_target: p.monthly_income_target,
+      }));
     } finally {
       setLoading(false);
       setRefreshing(false);
