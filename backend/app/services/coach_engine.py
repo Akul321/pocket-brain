@@ -3,7 +3,7 @@ from typing import List
 from sqlalchemy.orm import Session
 from ..models import Transaction, Budget, Goal
 from ..schemas import ChatMessage
-from .insights_engine import get_current_month_str, get_month_transactions
+from .insights_engine import get_active_month, get_month_transactions
 from .groq_service import query_groq
 from .ollama_service import query_ollama_chat
 
@@ -11,7 +11,7 @@ _MAX_HISTORY = 8  # keep last 8 messages (4 exchanges) to stay within free-tier 
 
 
 def build_financial_context(db: Session) -> dict:
-    month = get_current_month_str()
+    month = get_active_month(db)
     txns = get_month_transactions(db, month)
 
     income = sum(t.amount for t in txns if t.type == "income")

@@ -57,29 +57,23 @@ export default function DashboardPage() {
     if (!silent) setLoading(true);
     else setRefreshing(true);
     try {
-      const [s, t, p] = await Promise.all([getSummary(), getTransactions(), getProfile()]);
+      // Check profile first — if missing, restore from localStorage before fetching data
+      // (avoids Promise.all swallowing the restore when getSummary throws on empty DB)
+      let p = await getProfile();
       if (!p) {
         const cached = localStorage.getItem("pb_profile");
         if (cached) {
-          try {
-            const restored = await updateProfile(JSON.parse(cached));
-            setSummary(s);
-            setTransactions(t);
-            setProfile(restored);
-            return;
-          } catch { /* fall through to redirect */ }
+          try { p = await updateProfile(JSON.parse(cached)); } catch { /* fall through */ }
         }
-        router.replace("/onboarding");
-        return;
+        if (!p) { router.replace("/onboarding"); return; }
       }
+      localStorage.setItem("pb_profile", JSON.stringify({
+        name: p.name, currency: p.currency, monthly_income_target: p.monthly_income_target,
+      }));
+      const [s, t] = await Promise.all([getSummary(), getTransactions()]);
       setSummary(s);
       setTransactions(t);
       setProfile(p);
-      localStorage.setItem("pb_profile", JSON.stringify({
-        name: p.name,
-        currency: p.currency,
-        monthly_income_target: p.monthly_income_target,
-      }));
     } finally {
       setLoading(false);
       setRefreshing(false);
