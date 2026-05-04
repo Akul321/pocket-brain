@@ -11,7 +11,17 @@
       "Bash(git branch *)",
       "Bash(git push *)",
       "Bash(git add *)",
-      "Bash(xcopy \"C:\\\\Users\\\\Sapna\\\\Desktop\\\\pocket-brain\\\\backend\\\\app\" \"app\" /E /H /Y)"
+      "Bash(xcopy \"C:\\\\Users\\\\Sapna\\\\Desktop\\\\pocket-brain\\\\backend\\\\app\" \"app\" /E /H /Y)",
+      "Bash(cp \"/c/Users/Sapna/Desktop/pocket-brain/backend/app/services/csv_service.py\" \"/c/Users/Sapna/Desktop/pocket-brain-api/app/services/csv_service.py\")",
+      "Bash(cp \"/c/Users/Sapna/Desktop/pocket-brain/backend/app/services/insights_engine.py\" \"/c/Users/Sapna/Desktop/pocket-brain-api/app/services/insights_engine.py\")",
+      "Bash(cp \"/c/Users/Sapna/Desktop/pocket-brain/backend/app/schemas.py\" \"/c/Users/Sapna/Desktop/pocket-brain-api/app/schemas.py\")",
+      "Skill(claude-api)",
+      "Bash(.venv/Scripts/uvicorn app.main:app --reload)",
+      "Bash(cp \"C:\\\\Users\\\\Sapna\\\\Desktop\\\\pocket-brain\\\\backend\\\\requirements.txt\" \"C:\\\\Users\\\\Sapna\\\\Desktop\\\\hf-backend\\\\requirements.txt\")",
+      "Bash(cp \"C:\\\\Users\\\\Sapna\\\\Desktop\\\\pocket-brain\\\\backend\\\\app\\\\main.py\" \"C:\\\\Users\\\\Sapna\\\\Desktop\\\\hf-backend\\\\app\\\\main.py\")",
+      "Bash(cp \"C:\\\\Users\\\\Sapna\\\\Desktop\\\\pocket-brain\\\\backend\\\\app\\\\schemas.py\" \"C:\\\\Users\\\\Sapna\\\\Desktop\\\\hf-backend\\\\app\\\\schemas.py\")",
+      "Bash(cp \"C:\\\\Users\\\\Sapna\\\\Desktop\\\\pocket-brain\\\\backend\\\\app\\\\api\\\\coach.py\" \"C:\\\\Users\\\\Sapna\\\\Desktop\\\\hf-backend\\\\app\\\\api\\\\coach.py\")",
+      "Bash(cp \"C:\\\\Users\\\\Sapna\\\\Desktop\\\\pocket-brain\\\\backend\\\\app\\\\services\\\\coach_engine.py\" \"C:\\\\Users\\\\Sapna\\\\Desktop\\\\hf-backend\\\\app\\\\services\\\\coach_engine.py\")"
     ]
   }
 }

@@ -10,9 +10,9 @@ from .ollama_service import query_ollama_chat
 _MAX_HISTORY = 8  # keep last 8 messages (4 exchanges) to stay within free-tier token limits
 
 
-def build_financial_context(db: Session) -> dict:
-    month = get_active_month(db)
-    txns = get_month_transactions(db, month)
+def build_financial_context(db: Session, user_id: int = None) -> dict:
+    month = get_active_month(db, user_id)
+    txns = get_month_transactions(db, month, user_id)
 
     income = sum(t.amount for t in txns if t.type == "income")
     expenses = sum(t.amount for t in txns if t.type == "expense")
@@ -25,8 +25,14 @@ def build_financial_context(db: Session) -> dict:
             cat_totals[t.category] += t.amount
 
     top_categories = sorted(cat_totals.items(), key=lambda x: x[1], reverse=True)
-    goals = db.query(Goal).all()
-    budgets = db.query(Budget).filter(Budget.month == month).all()
+    goal_q = db.query(Goal)
+    if user_id is not None:
+        goal_q = goal_q.filter(Goal.user_id == user_id)
+    goals = goal_q.all()
+    budget_q = db.query(Budget).filter(Budget.month == month)
+    if user_id is not None:
+        budget_q = budget_q.filter(Budget.user_id == user_id)
+    budgets = budget_q.all()
 
     return {
         "income": income,
@@ -208,8 +214,8 @@ def _keyword_reply(message: str, ctx: dict) -> str:
     )
 
 
-async def generate_coach_reply(message: str, history: List[ChatMessage], db: Session) -> str:
-    ctx = build_financial_context(db)
+async def generate_coach_reply(message: str, history: List[ChatMessage], db: Session, user_id: int = None) -> str:
+    ctx = build_financial_context(db, user_id)
     system_prompt = _build_system_prompt(ctx)
 
     recent = history[-_MAX_HISTORY:]

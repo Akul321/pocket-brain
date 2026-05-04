@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   TrendingUp, TrendingDown, PiggyBank,
@@ -12,7 +11,7 @@ import { SpendingChart } from "@/components/dashboard/SpendingChart";
 import { TrendChart } from "@/components/dashboard/TrendChart";
 import { Card, CardHeader, CardBody } from "@/components/ui/Card";
 import { SkeletonCard } from "@/components/ui/SkeletonCard";
-import { getSummary, getTransactions, getProfile, updateProfile } from "@/lib/api";
+import { getSummary, getTransactions, getProfile } from "@/lib/api";
 import { useAppStore } from "@/lib/store";
 import type { Summary, Transaction, UserProfile } from "@/lib/types";
 
@@ -45,7 +44,6 @@ function buildCategoryData(transactions: Transaction[], activeMonth: string) {
 }
 
 export default function DashboardPage() {
-  const router = useRouter();
   const refreshKey = useAppStore((s) => s.refreshKey);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -57,23 +55,12 @@ export default function DashboardPage() {
     if (!silent) setLoading(true);
     else setRefreshing(true);
     try {
-      // Check profile first — if missing, restore from localStorage before fetching data
-      // (avoids Promise.all swallowing the restore when getSummary throws on empty DB)
-      let p = await getProfile();
-      if (!p) {
-        const cached = localStorage.getItem("pb_profile");
-        if (cached) {
-          try { p = await updateProfile(JSON.parse(cached)); } catch { /* fall through */ }
-        }
-        if (!p) { router.replace("/onboarding"); return; }
-      }
-      localStorage.setItem("pb_profile", JSON.stringify({
-        name: p.name, currency: p.currency, monthly_income_target: p.monthly_income_target,
-      }));
-      const [s, t] = await Promise.all([getSummary(), getTransactions()]);
+      const [s, t, p] = await Promise.all([getSummary(), getTransactions(), getProfile()]);
       setSummary(s);
       setTransactions(t);
       setProfile(p);
+    } catch {
+      // 401 handled by axios interceptor → redirects to /login
     } finally {
       setLoading(false);
       setRefreshing(false);

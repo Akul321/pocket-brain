@@ -31,11 +31,8 @@ export default function SettingsPage() {
         monthly_income_target: parseFloat(form.monthly_income_target),
       });
       setProfile(updated);
-      localStorage.setItem("pb_profile", JSON.stringify({
-        name: updated.name,
-        currency: updated.currency,
-        monthly_income_target: updated.monthly_income_target,
-      }));
+      const user = JSON.parse(localStorage.getItem("pb_user") || "{}");
+      localStorage.setItem("pb_user", JSON.stringify({ ...user, name: updated.name }));
       toast.success("Profile saved!");
     } catch { toast.error("Failed to save"); }
   };
@@ -44,9 +41,9 @@ export default function SettingsPage() {
     setResetting(true);
     try {
       await resetDemo();
-      toast.success("Data reset successfully!");
+      toast.success("Demo data loaded!");
       setShowReset(false);
-      window.location.href = "/onboarding";
+      window.location.href = "/dashboard";
     } catch { toast.error("Reset failed"); }
     finally { setResetting(false); }
   };

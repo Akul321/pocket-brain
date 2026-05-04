@@ -56,8 +56,9 @@ export default function LandingPage() {
           <span className="font-bold text-white">Pocket Brain</span>
         </div>
         <div className="ml-auto flex gap-3">
-          <Link href="/onboarding" className="btn-primary text-xs py-2">
-            Launch Dashboard <ArrowRight size={12} className="inline ml-1" />
+          <Link href="/login" className="btn-secondary text-xs py-2 px-4">Sign In</Link>
+          <Link href="/register" className="btn-primary text-xs py-2">
+            Get Started <ArrowRight size={12} className="inline ml-1" />
           </Link>
         </div>
       </nav>
@@ -98,11 +99,11 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/onboarding" className="btn-primary text-sm px-8 py-3">
-              Launch Dashboard <ArrowRight size={14} className="inline ml-1" />
+            <Link href="/register" className="btn-primary text-sm px-8 py-3">
+              Get Started Free <ArrowRight size={14} className="inline ml-1" />
             </Link>
-            <Link href="/onboarding" className="btn-secondary text-sm px-8 py-3">
-              View Demo Data
+            <Link href="/login" className="btn-secondary text-sm px-8 py-3">
+              Sign In
             </Link>
           </div>
         </motion.div>

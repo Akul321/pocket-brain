@@ -1,18 +1,11 @@
 "use client";
-import { Bell, Menu } from "lucide-react";
+import { Menu, LogOut } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import {
-  LayoutDashboard,
-  ArrowLeftRight,
-  Target,
-  PieChart,
-  Bot,
-  FlaskConical,
-  ShieldAlert,
-  Settings,
-  Brain,
+  LayoutDashboard, ArrowLeftRight, Target, PieChart,
+  Bot, FlaskConical, ShieldAlert, Settings, Brain,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
@@ -41,13 +34,27 @@ const PAGE_TITLES: Record<string, string> = {
 
 export function Topbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userInitial, setUserInitial] = useState("U");
   const title = PAGE_TITLES[pathname] || "Pocket Brain";
+
+  useEffect(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem("pb_user") || "{}");
+      if (user?.name) setUserInitial(user.name[0].toUpperCase());
+    } catch { /* ignore */ }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("pb_token");
+    localStorage.removeItem("pb_user");
+    router.push("/login");
+  };
 
   return (
     <>
       <header className="sticky top-0 z-20 h-16 flex items-center gap-4 px-4 md:px-6 border-b border-white/[0.06] bg-[#040d1a]/80 backdrop-blur-md">
-        {/* Mobile menu */}
         <button
           onClick={() => setMobileOpen(true)}
           className="md:hidden p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"
@@ -58,16 +65,19 @@ export function Topbar() {
         <h1 className="text-sm font-semibold text-white flex-1">{title}</h1>
 
         <div className="flex items-center gap-2">
-          <button className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all">
-            <Bell size={16} />
+          <button
+            onClick={handleLogout}
+            title="Sign out"
+            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+          >
+            <LogOut size={16} />
           </button>
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-xs font-bold text-black">
-            A
+            {userInitial}
           </div>
         </div>
       </header>
 
-      {/* Mobile drawer */}
       <AnimatePresence>
         {mobileOpen && (
           <>
@@ -96,14 +106,10 @@ export function Topbar() {
                   const active = pathname === href;
                   return (
                     <Link key={href} href={href} onClick={() => setMobileOpen(false)}>
-                      <div
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium",
-                          active
-                            ? "bg-green-500/10 text-green-400"
-                            : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.05]"
-                        )}
-                      >
+                      <div className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium",
+                        active ? "bg-green-500/10 text-green-400" : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.05]"
+                      )}>
                         <Icon size={17} />
                         {label}
                       </div>

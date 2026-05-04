@@ -10,29 +10,37 @@ load_dotenv()
 from .database import engine, get_db, Base
 from . import models
 from .seed import seed_demo_data
+from .auth import get_current_user
 from .api import transactions, budgets, goals, insights, coach, simulator, risk
-from .models import UserProfile
+from .api.auth import router as auth_router
+from .models import UserProfile, User
 from .schemas import UserProfileCreate, UserProfileOut
 
 Base.metadata.create_all(bind=engine)
 
-# Safe migrations — add new columns to existing DBs without losing data
+
 def _run_migrations():
     from sqlalchemy import text
     with engine.connect() as conn:
-        for col, definition in [
-            ("payment_method", "TEXT DEFAULT 'Other'"),
-            ("recurring", "TEXT DEFAULT 'no'"),
+        for table, col, definition in [
+            ("transactions", "payment_method", "TEXT DEFAULT 'Other'"),
+            ("transactions", "recurring", "TEXT DEFAULT 'no'"),
+            ("transactions", "user_id", "INTEGER"),
+            ("user_profiles", "user_id", "INTEGER"),
+            ("budgets", "user_id", "INTEGER"),
+            ("goals", "user_id", "INTEGER"),
+            ("insight_cache", "user_id", "INTEGER"),
         ]:
             try:
-                conn.execute(text(f"ALTER TABLE transactions ADD COLUMN {col} {definition}"))
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {definition}"))
                 conn.commit()
             except Exception:
-                pass  # column already exists
+                pass
+
 
 _run_migrations()
 
-app = FastAPI(title="Pocket Brain API", version="1.0.0", description="AI-powered personal finance API")
+app = FastAPI(title="Pocket Brain API", version="2.0.0")
 
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
@@ -47,6 +55,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
 app.include_router(transactions.router)
 app.include_router(budgets.router)
 app.include_router(goals.router)
@@ -56,27 +65,26 @@ app.include_router(simulator.router)
 app.include_router(risk.router)
 
 
-@app.on_event("startup")
-def startup_event():
-    pass  # Users choose fresh or demo on first visit
-
-
 @app.get("/")
 def health():
-    return {"status": "ok", "app": "Pocket Brain API", "version": "1.0.0"}
+    return {"status": "ok", "app": "Pocket Brain API", "version": "2.0.0"}
 
 
 @app.get("/api/profile", response_model=UserProfileOut)
-def get_profile(db: Session = Depends(get_db)):
-    profile = db.query(UserProfile).first()
+def get_profile(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    profile = db.query(UserProfile).filter(UserProfile.user_id == current_user.id).first()
     return profile
 
 
 @app.put("/api/profile", response_model=UserProfileOut)
-def update_profile(payload: UserProfileCreate, db: Session = Depends(get_db)):
-    profile = db.query(UserProfile).first()
+def update_profile(
+    payload: UserProfileCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    profile = db.query(UserProfile).filter(UserProfile.user_id == current_user.id).first()
     if not profile:
-        profile = UserProfile(**payload.dict())
+        profile = UserProfile(user_id=current_user.id, **payload.dict())
         db.add(profile)
     else:
         for k, v in payload.dict().items():
@@ -88,41 +96,30 @@ def update_profile(payload: UserProfileCreate, db: Session = Depends(get_db)):
 
 class InitRequest(BaseModel):
     mode: str  # "fresh" or "demo"
-    name: str = "User"
-    currency: str = "₹"
-    monthly_income_target: float = 50000.0
 
 
 @app.post("/api/init")
-def init_app(payload: InitRequest, db: Session = Depends(get_db)):
-    from .models import Transaction, Budget, Goal, UserProfile
-    db.query(Transaction).delete()
-    db.query(Budget).delete()
-    db.query(Goal).delete()
-    db.query(UserProfile).delete()
+def init_app(
+    payload: InitRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from .models import Transaction, Budget, Goal
+    db.query(Transaction).filter(Transaction.user_id == current_user.id).delete()
+    db.query(Budget).filter(Budget.user_id == current_user.id).delete()
+    db.query(Goal).filter(Goal.user_id == current_user.id).delete()
     db.commit()
     if payload.mode == "demo":
-        seed_demo_data(db, name=payload.name, currency=payload.currency,
-                       monthly_income_target=payload.monthly_income_target)
-    else:
-        profile = UserProfile(name=payload.name, currency=payload.currency,
-                              monthly_income_target=payload.monthly_income_target)
-        db.add(profile)
-        db.commit()
+        seed_demo_data(db, user_id=current_user.id)
     return {"status": "ok", "mode": payload.mode}
 
 
 @app.post("/api/reset-demo")
-def reset_demo(db: Session = Depends(get_db)):
-    from .models import Transaction, Budget, Goal, UserProfile
-    profile = db.query(UserProfile).first()
-    name = profile.name if profile else "Demo User"
-    currency = profile.currency if profile else "₹"
-    income = profile.monthly_income_target if profile else 50000.0
-    db.query(Transaction).delete()
-    db.query(Budget).delete()
-    db.query(Goal).delete()
-    db.query(UserProfile).delete()
+def reset_demo(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from .models import Transaction, Budget, Goal
+    db.query(Transaction).filter(Transaction.user_id == current_user.id).delete()
+    db.query(Budget).filter(Budget.user_id == current_user.id).delete()
+    db.query(Goal).filter(Goal.user_id == current_user.id).delete()
     db.commit()
-    seed_demo_data(db, name=name, currency=currency, monthly_income_target=income)
+    seed_demo_data(db, user_id=current_user.id)
     return {"status": "reset complete"}

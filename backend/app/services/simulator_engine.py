@@ -1,12 +1,13 @@
 from collections import defaultdict
+from typing import Optional
 from sqlalchemy.orm import Session
 from ..models import Transaction, Goal
-from .insights_engine import get_current_month_str, get_month_transactions
+from .insights_engine import get_active_month, get_month_transactions
 
 
-def run_simulation(db: Session, params: dict) -> dict:
-    month = get_current_month_str()
-    txns = get_month_transactions(db, month)
+def run_simulation(db: Session, params: dict, user_id: Optional[int] = None) -> dict:
+    month = get_active_month(db, user_id)
+    txns = get_month_transactions(db, month, user_id)
 
     income = sum(t.amount for t in txns if t.type == "income")
     expenses = sum(t.amount for t in txns if t.type == "expense")
@@ -16,19 +17,15 @@ def run_simulation(db: Session, params: dict) -> dict:
         if t.type == "expense":
             cat_totals[t.category] += t.amount
 
-    # Apply simulation
     sim_income = income + params.get("income_change", 0)
     sim_expenses = expenses + params.get("expense_change", 0) + params.get("one_time_purchase", 0)
 
     category = params.get("category")
     reduction_pct = params.get("category_reduction_pct", 0)
     if category and reduction_pct > 0:
-        cat_expense = cat_totals.get(category, 0)
-        reduction = cat_expense * (reduction_pct / 100)
-        sim_expenses -= reduction
+        sim_expenses -= cat_totals.get(category, 0) * (reduction_pct / 100)
 
-    goal_contrib = params.get("goal_contribution_change", 0)
-    sim_expenses += goal_contrib
+    sim_expenses += params.get("goal_contribution_change", 0)
 
     sim_savings = sim_income - sim_expenses
     sim_savings_rate = (sim_savings / sim_income * 100) if sim_income > 0 else 0
@@ -47,17 +44,13 @@ def run_simulation(db: Session, params: dict) -> dict:
     else:
         risk_change = f"Risk changes from {curr_risk} to {sim_risk}"
 
-    # Recommendation
     delta = sim_savings - curr_savings
     if delta > 0:
         recommendation = f"This scenario improves your savings by ₹{delta:,.0f}/month. Go for it!"
     elif delta == 0:
         recommendation = "No net change in savings. This decision is neutral."
     else:
-        recommendation = (
-            f"This reduces your savings by ₹{abs(delta):,.0f}/month. "
-            f"Ensure you have enough buffer before proceeding."
-        )
+        recommendation = f"This reduces your savings by ₹{abs(delta):,.0f}/month. Ensure you have enough buffer before proceeding."
 
     return {
         "current_savings": round(curr_savings, 2),

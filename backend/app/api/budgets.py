@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List
 from collections import defaultdict
 from ..database import get_db
-from ..models import Budget, Transaction
+from ..models import Budget, User
+from ..auth import get_current_user
 from ..schemas import BudgetCreate, BudgetOut
 from ..services.insights_engine import get_current_month_str, get_month_transactions
 
@@ -14,30 +15,19 @@ def enrich_budget(budget: Budget, cat_totals: dict) -> BudgetOut:
     spent = cat_totals.get(budget.category, 0)
     remaining = budget.monthly_limit - spent
     pct = (spent / budget.monthly_limit * 100) if budget.monthly_limit > 0 else 0
-    if pct > 100:
-        status = "over"
-    elif pct > 80:
-        status = "near"
-    else:
-        status = "safe"
+    status = "over" if pct > 100 else "near" if pct > 80 else "safe"
     return BudgetOut(
-        id=budget.id,
-        category=budget.category,
-        monthly_limit=budget.monthly_limit,
-        month=budget.month,
-        spent=round(spent, 2),
-        remaining=round(remaining, 2),
-        percentage=round(pct, 1),
-        status=status,
-        created_at=budget.created_at,
+        id=budget.id, category=budget.category, monthly_limit=budget.monthly_limit,
+        month=budget.month, spent=round(spent, 2), remaining=round(remaining, 2),
+        percentage=round(pct, 1), status=status, created_at=budget.created_at,
     )
 
 
 @router.get("", response_model=List[BudgetOut])
-def list_budgets(db: Session = Depends(get_db)):
+def list_budgets(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     month = get_current_month_str()
-    budgets = db.query(Budget).filter(Budget.month == month).all()
-    txns = get_month_transactions(db, month)
+    budgets = db.query(Budget).filter(Budget.month == month, Budget.user_id == current_user.id).all()
+    txns = get_month_transactions(db, month, current_user.id)
     cat_totals: dict = defaultdict(float)
     for t in txns:
         if t.type == "expense":
@@ -46,24 +36,27 @@ def list_budgets(db: Session = Depends(get_db)):
 
 
 @router.post("", response_model=BudgetOut, status_code=201)
-def create_or_update_budget(payload: BudgetCreate, db: Session = Depends(get_db)):
-    existing = (
-        db.query(Budget)
-        .filter(Budget.category == payload.category, Budget.month == payload.month)
-        .first()
-    )
+def create_or_update_budget(
+    payload: BudgetCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    existing = db.query(Budget).filter(
+        Budget.category == payload.category,
+        Budget.month == payload.month,
+        Budget.user_id == current_user.id,
+    ).first()
     if existing:
         existing.monthly_limit = payload.monthly_limit
         db.commit()
         db.refresh(existing)
         budget = existing
     else:
-        budget = Budget(**payload.dict())
+        budget = Budget(**payload.dict(), user_id=current_user.id)
         db.add(budget)
         db.commit()
         db.refresh(budget)
-
-    txns = get_month_transactions(db, payload.month)
+    txns = get_month_transactions(db, payload.month, current_user.id)
     cat_totals: dict = defaultdict(float)
     for t in txns:
         if t.type == "expense":
@@ -72,8 +65,12 @@ def create_or_update_budget(payload: BudgetCreate, db: Session = Depends(get_db)
 
 
 @router.delete("/{budget_id}", status_code=204)
-def delete_budget(budget_id: int, db: Session = Depends(get_db)):
-    b = db.query(Budget).filter(Budget.id == budget_id).first()
+def delete_budget(
+    budget_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    b = db.query(Budget).filter(Budget.id == budget_id, Budget.user_id == current_user.id).first()
     if not b:
         raise HTTPException(status_code=404, detail="Budget not found")
     db.delete(b)

@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import date
 from ..database import get_db
-from ..models import Transaction
+from ..models import Transaction, User
+from ..auth import get_current_user
 from ..schemas import TransactionCreate, TransactionUpdate, TransactionOut
 from ..services.categorizer import categorize, get_ai_note
 from ..services.csv_service import parse_csv, export_csv
@@ -16,6 +17,7 @@ router = APIRouter(prefix="/api/transactions", tags=["transactions"])
 @router.get("", response_model=List[TransactionOut])
 def list_transactions(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     category: Optional[str] = None,
     type: Optional[str] = None,
     search: Optional[str] = None,
@@ -24,7 +26,7 @@ def list_transactions(
     sort_by: Optional[str] = "date",
     sort_dir: Optional[str] = "desc",
 ):
-    q = db.query(Transaction)
+    q = db.query(Transaction).filter(Transaction.user_id == current_user.id)
     if category:
         q = q.filter(Transaction.category == category)
     if type:
@@ -35,19 +37,21 @@ def list_transactions(
         q = q.filter(Transaction.date >= start_date)
     if end_date:
         q = q.filter(Transaction.date <= end_date)
-    if sort_by == "amount":
-        col = Transaction.amount
-    else:
-        col = Transaction.date
+    col = Transaction.amount if sort_by == "amount" else Transaction.date
     q = q.order_by(col.desc() if sort_dir == "desc" else col.asc())
     return q.all()
 
 
 @router.post("", response_model=TransactionOut, status_code=201)
-def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)):
+def create_transaction(
+    payload: TransactionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     data = payload.dict()
     data["category"] = data.get("category") or categorize(payload.description)
     data["ai_note"] = get_ai_note(payload.description, payload.amount, data["category"])
+    data["user_id"] = current_user.id
     txn = Transaction(**data)
     db.add(txn)
     db.commit()
@@ -56,8 +60,13 @@ def create_transaction(payload: TransactionCreate, db: Session = Depends(get_db)
 
 
 @router.put("/{txn_id}", response_model=TransactionOut)
-def update_transaction(txn_id: int, payload: TransactionUpdate, db: Session = Depends(get_db)):
-    txn = db.query(Transaction).filter(Transaction.id == txn_id).first()
+def update_transaction(
+    txn_id: int,
+    payload: TransactionUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    txn = db.query(Transaction).filter(Transaction.id == txn_id, Transaction.user_id == current_user.id).first()
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found")
     for field, value in payload.dict(exclude_unset=True).items():
@@ -70,8 +79,12 @@ def update_transaction(txn_id: int, payload: TransactionUpdate, db: Session = De
 
 
 @router.delete("/{txn_id}", status_code=204)
-def delete_transaction(txn_id: int, db: Session = Depends(get_db)):
-    txn = db.query(Transaction).filter(Transaction.id == txn_id).first()
+def delete_transaction(
+    txn_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    txn = db.query(Transaction).filter(Transaction.id == txn_id, Transaction.user_id == current_user.id).first()
     if not txn:
         raise HTTPException(status_code=404, detail="Transaction not found")
     db.delete(txn)
@@ -79,21 +92,26 @@ def delete_transaction(txn_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/import")
-async def import_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def import_csv(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     content = await file.read()
     records = parse_csv(content)
-    created = 0
     for r in records:
-        txn = Transaction(**r)
-        db.add(txn)
-        created += 1
+        r["user_id"] = current_user.id
+        db.add(Transaction(**r))
     db.commit()
-    return {"imported": created}
+    return {"imported": len(records)}
 
 
 @router.get("/export")
-def export_transactions(db: Session = Depends(get_db)):
-    txns = db.query(Transaction).order_by(Transaction.date.desc()).all()
+def export_transactions(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    txns = db.query(Transaction).filter(Transaction.user_id == current_user.id).order_by(Transaction.date.desc()).all()
     csv_data = export_csv(txns)
     return StreamingResponse(
         io.StringIO(csv_data),

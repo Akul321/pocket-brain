@@ -1,31 +1,54 @@
 import axios from "axios";
-import type {
-  Transaction,
-  Budget,
-  Goal,
-  Summary,
-  Risk,
-  SimulateResult,
-  UserProfile,
-  Insight,
-} from "./types";
+import type { Transaction, Budget, Goal, Summary, Risk, SimulateResult, UserProfile, Insight } from "./types";
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const api = axios.create({ baseURL: BASE });
+
+api.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("pb_token");
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem("pb_token");
+      localStorage.removeItem("pb_user");
+      window.location.href = "/login";
+    }
+    return Promise.reject(err);
+  }
+);
+
+// Auth
+export const register = (data: { email: string; password: string; name: string; currency?: string; monthly_income_target?: number }) =>
+  api.post<{ access_token: string; name: string; user_id: number }>("/api/auth/register", data).then((r) => r.data);
+
+export const login = (data: { email: string; password: string }) =>
+  api.post<{ access_token: string; name: string; user_id: number }>("/api/auth/login", data).then((r) => r.data);
+
+export const logout = () => {
+  localStorage.removeItem("pb_token");
+  localStorage.removeItem("pb_user");
+  window.location.href = "/login";
+};
 
 // Summary
 export const getSummary = () => api.get<Summary>("/api/summary").then((r) => r.data);
 export const getInsights = () => api.get<Insight[]>("/api/insights").then((r) => r.data);
 
 // Profile
-export const getProfile = () =>
-  api.get<UserProfile>("/api/profile").then((r) => r.data).catch(() => null);
+export const getProfile = () => api.get<UserProfile>("/api/profile").then((r) => r.data);
 export const updateProfile = (data: Partial<UserProfile>) =>
   api.put<UserProfile>("/api/profile", data).then((r) => r.data);
 export const resetDemo = () => api.post("/api/reset-demo").then((r) => r.data);
-export const initApp = (mode: "fresh" | "demo", name: string, currency = "₹", monthly_income_target = 50000) =>
-  api.post("/api/init", { mode, name, currency, monthly_income_target }).then((r) => r.data);
+export const initApp = (mode: "fresh" | "demo") =>
+  api.post("/api/init", { mode }).then((r) => r.data);
 
 // Transactions
 export const getTransactions = (params?: Record<string, string>) =>

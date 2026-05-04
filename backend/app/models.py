@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Enum, Text, Date
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, Date, ForeignKey
 from sqlalchemy.sql import func
 import enum
 from .database import Base
@@ -15,10 +15,19 @@ class Priority(str, enum.Enum):
     high = "high"
 
 
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class UserProfile(Base):
     __tablename__ = "user_profiles"
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, default="Akul")
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    name = Column(String, default="User")
     currency = Column(String, default="₹")
     monthly_income_target = Column(Float, default=50000.0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -27,6 +36,7 @@ class UserProfile(Base):
 class Transaction(Base):
     __tablename__ = "transactions"
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     date = Column(Date, nullable=False)
     description = Column(String, nullable=False)
     amount = Column(Float, nullable=False)
@@ -35,13 +45,14 @@ class Transaction(Base):
     notes = Column(Text, default="")
     ai_note = Column(String, default="")
     payment_method = Column(String, default="Other")
-    recurring = Column(String, default="no")  # "yes" | "no"
+    recurring = Column(String, default="no")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class Budget(Base):
     __tablename__ = "budgets"
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     category = Column(String, nullable=False)
     monthly_limit = Column(Float, nullable=False)
     month = Column(String, nullable=False)
@@ -51,6 +62,7 @@ class Budget(Base):
 class Goal(Base):
     __tablename__ = "goals"
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     name = Column(String, nullable=False)
     target_amount = Column(Float, nullable=False)
     current_amount = Column(Float, default=0.0)
@@ -63,6 +75,7 @@ class Goal(Base):
 class InsightCache(Base):
     __tablename__ = "insight_cache"
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     insight_type = Column(String)
     text = Column(Text)
     severity = Column(String, default="info")
